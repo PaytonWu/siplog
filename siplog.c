@@ -1,5 +1,7 @@
 /* $Id$ */
 
+#define _FILE_OFFSET_BITS  64
+
 #include <sys/file.h>
 #include <errno.h>
 #include <stdarg.h>
