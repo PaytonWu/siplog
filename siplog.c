@@ -254,9 +254,9 @@ siplog_close(siplog_t handle)
 {
     struct loginfo *lp;
 
+    lp = (struct loginfo *)handle;
     if (lp == NULL)
         return;
-    lp = (struct loginfo *)handle;
     lp->bend->close(lp);
     free(lp->call_id);
     free(lp->app);
