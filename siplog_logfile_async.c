@@ -34,8 +34,10 @@ struct siplog_wi
     struct siplog_wi *next;
 };
 
-static pthread_t siplog_queue = NULL;
-static pthread_cond_t siplog_queue_cond	= PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t siplog_init_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int siplog_queue_inited = 0;
+static pthread_t siplog_queue;
+static pthread_cond_t siplog_queue_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t siplog_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t siplog_wi_free_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t siplog_wi_free_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -261,9 +263,12 @@ siplog_logfile_async_open(struct loginfo *lp)
 {
     struct siplog_wi *wi;
 
-    if (siplog_queue == NULL)
+    pthread_mutex_lock(&siplog_init_mutex);
+    if (siplog_queue_inited == 0)
 	if (siplog_queue_init() != 0)
 	    return NULL;
+    siplog_queue_inited = 1;
+    pthread_mutex_unlock(&siplog_init_mutex);
 
     if ((lp->flags & LF_REOPEN) == 0) {
 	wi = siplog_queue_get_free_item(SIPLOG_WI_NOWAIT);
