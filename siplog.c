@@ -39,11 +39,12 @@ static void   siplog_logfile_close(struct loginfo *);
 static struct bend bends[] = {
     {siplog_stderr_open, siplog_stderr_write, siplog_stderr_close, "stderr"},
     {siplog_logfile_open, siplog_logfile_write, siplog_logfile_close, "logfile"},
+    {siplog_logfile_async_open, siplog_logfile_async_write, siplog_logfile_async_close, "logfile_async"},
     {NULL, NULL, NULL, NULL}
 };
 
-static char *
-timeToStr(time_t uTime, char *buf)
+char *
+siplog_timeToStr(time_t uTime, char *buf)
 {
     static const char *wdays[7] = {"Sun", "Mon", "Tue", "Wed", "Thu",
       "Fri", "Sat"};
@@ -66,7 +67,7 @@ timeToStr(time_t uTime, char *buf)
       mon, mytm.tm_hour, mytm.tm_min, mytm.tm_sec);
 #endif
     return (buf);
-};
+}
 
 static void *
 siplog_stderr_open(struct loginfo *lp __attribute__ ((unused)))
@@ -103,7 +104,7 @@ siplog_logfile_open(struct loginfo *lp __attribute__ ((unused)))
 
     cp = getenv("SIPLOG_LOGFILE_FILE");
     if (cp == NULL)
-	cp = "/var/log/sip.log";
+	cp = SIPLOG_DEFAULT_PATH;
 
     if ((lp->flags & LF_REOPEN) == 0)
         return (void *)fopen(cp, "a");
@@ -124,7 +125,7 @@ siplog_logfile_write(struct loginfo *lp, const char *tstamp, const char *estr, c
 
 	cp = getenv("SIPLOG_LOGFILE_FILE");
 	if (cp == NULL)
-	    cp = "/var/log/sip.log";
+	    cp = SIPLOG_DEFAULT_PATH;
 
 	f = fopen(cp, "a");
 	if (f == NULL)
@@ -217,7 +218,7 @@ siplog_write(int level, siplog_t handle, const char *fmt, ...)
     if (lp == NULL || lp->bend == NULL || level < lp->level)
         return;
     t = time(&t);
-    timeToStr(t, tstamp);
+    siplog_timeToStr(t, tstamp);
     va_start(ap, fmt);
     lp->bend->write(lp, tstamp, NULL, fmt, ap);
     va_end(ap);
@@ -242,7 +243,7 @@ siplog_ewrite(int level, siplog_t handle, const char *fmt, ...)
 	return;
     }
     t = time(&t);
-    timeToStr(t, tstamp);
+    siplog_timeToStr(t, tstamp);
     va_start(ap, fmt);
     lp->bend->write(lp, tstamp, ebuf, fmt, ap);
     va_end(ap);

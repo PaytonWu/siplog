@@ -6,6 +6,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#define SIPLOG_DEFAULT_PATH	"/var/log/sip.log"
+
 struct loginfo
 {
     void        *stream;
@@ -28,5 +30,12 @@ struct bend
     siplog_bend_close_t close;
     const char          *name;
 };
+
+void *siplog_logfile_async_open(struct loginfo *);
+void siplog_logfile_async_write(struct loginfo *, const char *, const char *,
+  const char *, va_list);
+void siplog_logfile_async_close(struct loginfo *);
+
+char *siplog_timeToStr(time_t, char *);
 
 #endif /* _SIPLOG_INTERNAL_H_ */
