@@ -28,6 +28,7 @@ struct bend
     siplog_bend_open_t  open;
     siplog_bend_write_t write;
     siplog_bend_close_t close;
+    int			free_after_close;
     const char          *name;
 };
 

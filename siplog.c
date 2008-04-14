@@ -37,10 +37,10 @@ static void   siplog_logfile_write(struct loginfo *, const char *, const char *,
 static void   siplog_logfile_close(struct loginfo *);
 
 static struct bend bends[] = {
-    {siplog_stderr_open, siplog_stderr_write, siplog_stderr_close, "stderr"},
-    {siplog_logfile_open, siplog_logfile_write, siplog_logfile_close, "logfile"},
-    {siplog_logfile_async_open, siplog_logfile_async_write, siplog_logfile_async_close, "logfile_async"},
-    {NULL, NULL, NULL, NULL}
+    {siplog_stderr_open, siplog_stderr_write, siplog_stderr_close, 1, "stderr"},
+    {siplog_logfile_open, siplog_logfile_write, siplog_logfile_close, 1, "logfile"},
+    {siplog_logfile_async_open, siplog_logfile_async_write, siplog_logfile_async_close, 0, "logfile_async"},
+    {NULL, NULL, NULL, 0, NULL}
 };
 
 char *
@@ -259,7 +259,9 @@ siplog_close(siplog_t handle)
     if (lp == NULL)
         return;
     lp->bend->close(lp);
-    free(lp->call_id);
-    free(lp->app);
-    free(lp);
+    if (lp->bend->free_after_close) {
+	free(lp->call_id);
+	free(lp->app);
+	free(lp);
+    }
 }
