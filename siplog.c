@@ -98,7 +98,7 @@ siplog_stderr_close(struct loginfo *lp __attribute__ ((unused)))
 }
 
 static void *
-siplog_logfile_open(struct loginfo *lp __attribute__ ((unused)))
+siplog_logfile_open(struct loginfo *lp)
 {
     const char *cp;
 
