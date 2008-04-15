@@ -102,10 +102,10 @@ siplog_queue_handle_write(struct siplog_wi *wi)
 
     f = (FILE *)wi->loginfo->stream;
     if (f != NULL) {
-	lockf(fileno(f), F_LOCK, wi->len);
+	flock(fileno(f), LOCK_EX);
 	fwrite(wi->data, wi->len, 1, f);
 	fflush(f);
-	lockf(fileno(f), F_ULOCK, wi->len);
+	flock(fileno(f), LOCK_UN);
     }
 }
 
