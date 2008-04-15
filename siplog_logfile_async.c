@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "siplog.h"
 #include "siplog_internal.h"
@@ -101,10 +102,10 @@ siplog_queue_handle_write(struct siplog_wi *wi)
 
     f = (FILE *)wi->loginfo->stream;
     if (f != NULL) {
-	flockfile(f);
+	lockf(fileno(f), F_LOCK, wi->len);
 	fwrite(wi->data, wi->len, 1, f);
 	fflush(f);
-	funlockfile(f);
+	lockf(fileno(f), F_ULOCK, wi->len);
     }
 }
 
