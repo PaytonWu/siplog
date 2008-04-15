@@ -38,5 +38,6 @@ void siplog_logfile_async_write(struct loginfo *, const char *, const char *,
 void siplog_logfile_async_close(struct loginfo *);
 
 char *siplog_timeToStr(time_t, char *);
+void siplog_free(struct loginfo *);
 
 #endif /* _SIPLOG_INTERNAL_H_ */

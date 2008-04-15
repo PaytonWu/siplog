@@ -260,8 +260,15 @@ siplog_close(siplog_t handle)
         return;
     lp->bend->close(lp);
     if (lp->bend->free_after_close) {
-	free(lp->call_id);
-	free(lp->app);
-	free(lp);
+	siplog_free(lp);
     }
+}
+
+void
+siplog_free(struct loginfo *lp)
+{
+
+    free(lp->call_id);
+    free(lp->app);
+    free(lp);
 }

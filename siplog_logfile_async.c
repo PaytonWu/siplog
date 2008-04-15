@@ -196,9 +196,7 @@ siplog_queue_run(void)
 	    case SIPLOG_ITEM_ASYNC_CLOSE:
 		siplog_queue_handle_close((FILE *)wi->loginfo->stream);
 		/* free loginfo structure */
-		free(wi->loginfo->call_id);
-		free(wi->loginfo->app);
-		free(wi->loginfo);
+		siplog_free(wi->loginfo);
 		break;
 	    case SIPLOG_ITEM_ASYNC_OWRC:
 		siplog_queue_handle_owrc(wi);
