@@ -92,7 +92,7 @@ static void
 siplog_queue_handle_open(struct siplog_wi *wi)
 {
 
-    wi->loginfo->stream = (void *)fopen(wi->name, "a");
+    wi->loginfo->private = (void *)fopen(wi->name, "a");
 }
 
 static void
@@ -100,7 +100,7 @@ siplog_queue_handle_write(struct siplog_wi *wi)
 {
     FILE *f;
 
-    f = (FILE *)wi->loginfo->stream;
+    f = (FILE *)wi->loginfo->private;
     if (f != NULL) {
 	flock(fileno(f), LOCK_EX);
 	fwrite(wi->data, wi->len, 1, f);
@@ -123,7 +123,7 @@ siplog_queue_handle_owrc(struct siplog_wi *wi)
 
     siplog_queue_handle_open(wi);
     siplog_queue_handle_write(wi);
-    siplog_queue_handle_close((FILE *)wi->loginfo->stream);
+    siplog_queue_handle_close((FILE *)wi->loginfo->private);
 }
 
 struct siplog_wi *
@@ -195,7 +195,7 @@ siplog_queue_run(void)
 		siplog_queue_handle_write(wi);
 		break;
 	    case SIPLOG_ITEM_ASYNC_CLOSE:
-		siplog_queue_handle_close((FILE *)wi->loginfo->stream);
+		siplog_queue_handle_close((FILE *)wi->loginfo->private);
 		/* free loginfo structure */
 		siplog_free(wi->loginfo);
 		break;
@@ -257,7 +257,7 @@ siplog_queue_init(void)
     return 0;
 }
 
-void *
+int
 siplog_logfile_async_open(struct loginfo *lp)
 {
     struct siplog_wi *wi;
@@ -265,14 +265,14 @@ siplog_logfile_async_open(struct loginfo *lp)
     pthread_mutex_lock(&siplog_init_mutex);
     if (siplog_queue_inited == 0)
 	if (siplog_queue_init() != 0)
-	    return NULL;
+	    return -1;
     siplog_queue_inited = 1;
     pthread_mutex_unlock(&siplog_init_mutex);
 
     if ((lp->flags & LF_REOPEN) == 0) {
 	wi = siplog_queue_get_free_item(SIPLOG_WI_NOWAIT);
-	if (wi == NULL)
-	    return NULL;
+	if (wi == NULL) 
+	    return -1;
 
 	wi->item_type = SIPLOG_ITEM_ASYNC_OPEN;
 	wi->loginfo = lp;
@@ -283,8 +283,7 @@ siplog_logfile_async_open(struct loginfo *lp)
 
 	siplog_queue_put_item(wi);
     }
-
-    return (void *)0x1;
+    return 0;
 }
 
 void

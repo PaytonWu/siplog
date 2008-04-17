@@ -10,7 +10,7 @@
 
 struct loginfo
 {
-    void        *stream;
+    void        *private;
     char        *app;
     char        *call_id;
     int         level;
@@ -18,7 +18,7 @@ struct loginfo
     int         flags;
 };
 
-typedef void * (*siplog_bend_open_t)(struct loginfo *);
+typedef int    (*siplog_bend_open_t)(struct loginfo *);
 typedef void   (*siplog_bend_write_t)(struct loginfo *, const char *, const char *,
 				      const char *, va_list);
 typedef void   (*siplog_bend_close_t)(struct loginfo *);
@@ -32,7 +32,7 @@ struct bend
     const char          *name;
 };
 
-void *siplog_logfile_async_open(struct loginfo *);
+int siplog_logfile_async_open(struct loginfo *);
 void siplog_logfile_async_write(struct loginfo *, const char *, const char *,
   const char *, va_list);
 void siplog_logfile_async_close(struct loginfo *);

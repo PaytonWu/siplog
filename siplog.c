@@ -27,11 +27,11 @@ static struct
     {NULL,   0}
 };
 
-static void * siplog_stderr_open(struct loginfo *);
+static int    siplog_stderr_open(struct loginfo *);
 static void   siplog_stderr_write(struct loginfo *, const char *, const char *,
 				  const char *, va_list);
 static void   siplog_stderr_close(struct loginfo *);
-static void * siplog_logfile_open(struct loginfo *);
+static int    siplog_logfile_open(struct loginfo *);
 static void   siplog_logfile_write(struct loginfo *, const char *, const char *,
 		    		   const char *, va_list);
 static void   siplog_logfile_close(struct loginfo *);
@@ -69,11 +69,12 @@ siplog_timeToStr(time_t uTime, char *buf)
     return (buf);
 }
 
-static void *
-siplog_stderr_open(struct loginfo *lp __attribute__ ((unused)))
+static int
+siplog_stderr_open(struct loginfo *lp)
 {
 
-    return (void *)stderr;
+    lp->private = (void *)stderr;
+    return (lp->private != NULL ? 0 : -1);
 }
 
 static void
@@ -82,7 +83,7 @@ siplog_stderr_write(struct loginfo *lp, const char *tstamp, const char *estr, co
 {
     FILE *f;
 
-    f = (FILE *)lp->stream;
+    f = (FILE *)lp->private;
     fprintf(f, "%s/%s/%s: ", tstamp, lp->call_id, lp->app);
     vfprintf(f, fmt, ap);
     if (estr != NULL)
@@ -97,7 +98,7 @@ siplog_stderr_close(struct loginfo *lp __attribute__ ((unused)))
     /* Nothing to do here */
 }
 
-static void *
+static int
 siplog_logfile_open(struct loginfo *lp)
 {
     const char *cp;
@@ -106,10 +107,12 @@ siplog_logfile_open(struct loginfo *lp)
     if (cp == NULL)
 	cp = SIPLOG_DEFAULT_PATH;
 
-    if ((lp->flags & LF_REOPEN) == 0)
-        return (void *)fopen(cp, "a");
-    else
-	return (void *)0x1;
+    if ((lp->flags & LF_REOPEN) == 0) {
+        lp->private = (void *)fopen(cp, "a");
+        if (lp->private == NULL)
+            return -1;
+    }
+    return 0;
 }
 
 static void
@@ -119,7 +122,7 @@ siplog_logfile_write(struct loginfo *lp, const char *tstamp, const char *estr, c
     FILE *f;
 
     if ((lp->flags & LF_REOPEN) == 0) {
-	f = (FILE *)lp->stream;
+	f = (FILE *)lp->private;
     } else {
 	const char *cp;
 
@@ -148,7 +151,7 @@ siplog_logfile_close(struct loginfo *lp)
 {
 
     if ((lp->flags & LF_REOPEN) == 0)
-        fclose((FILE *)lp->stream);
+        fclose((FILE *)lp->private);
 }
 
 siplog_t
@@ -195,11 +198,11 @@ siplog_open(const char *app, const char *call_id, int flags)
         }
     }
 
-    lp->stream = lp->bend->open(lp);
-    if (lp->stream == NULL) {
-        free(lp->call_id);
-        free(lp->app);
-        free(lp);
+    /* Detect uninitialized access */
+    lp->private = (void *)0x1;
+
+    if (lp->bend->open(lp) != 0) {
+        siplog_free(lp);
         return NULL;
     }
 
