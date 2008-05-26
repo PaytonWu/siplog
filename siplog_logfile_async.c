@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <sys/file.h>
 #include <errno.h>
+#include <sched.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,7 +47,7 @@ static pthread_mutex_t siplog_wi_free_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int siplog_dropped_items;
 
 static struct siplog_wi siplog_wi_pool[SIPLOG_WI_POOL_SIZE];
-static struct siplog_wi *siplog_wi_free, *siplog_wi_free_tail;
+static struct siplog_wi *siplog_wi_free;
 static struct siplog_wi *siplog_wi_queue, *siplog_wi_queue_tail;
 
 static int siplog_queue_init(void);
@@ -87,6 +88,25 @@ siplog_log_dropped_items(struct siplog_wi *wi)
     siplog_dropped_items = 0;
 }
 #endif
+
+static void
+siplog_logfile_async_atexit(void)
+{
+    struct siplog_wi *wi;
+    int c;
+
+    for (;;) {
+        pthread_mutex_lock(&siplog_wi_free_mutex);
+        for (c = 0, wi = siplog_wi_free; wi != NULL; wi = wi->next) {
+            c += 1;
+        }
+        if (c == SIPLOG_WI_POOL_SIZE)
+            break;
+        pthread_mutex_unlock(&siplog_wi_free_mutex);
+        sched_yield();
+    }
+    pthread_mutex_unlock(&siplog_wi_free_mutex);
+}
 
 static void
 siplog_queue_handle_open(struct siplog_wi *wi)
@@ -219,14 +239,8 @@ siplog_queue_run(void)
 	}
 #endif
 
-	wi->next = NULL;
-	if (siplog_wi_free == NULL) {
-	    siplog_wi_free = wi;
-	    siplog_wi_free_tail = wi;
-	} else {
-	    siplog_wi_free_tail->next = wi;
-	    siplog_wi_free_tail = wi;
-	}
+	wi->next = siplog_wi_free;
+	siplog_wi_free = wi;
 
 	pthread_cond_signal(&siplog_wi_free_cond);
 	pthread_mutex_unlock(&siplog_wi_free_mutex);
@@ -245,7 +259,6 @@ siplog_queue_init(void)
     siplog_wi_pool[SIPLOG_WI_POOL_SIZE - 1].next = NULL;
 
     siplog_wi_free = siplog_wi_pool;
-    siplog_wi_free_tail = &siplog_wi_pool[SIPLOG_WI_POOL_SIZE - 1];
     siplog_wi_queue = NULL;
     siplog_wi_queue_tail = NULL;
 
@@ -253,6 +266,8 @@ siplog_queue_init(void)
 
     if (pthread_create(&siplog_queue, NULL, (void *(*)(void *))&siplog_queue_run, NULL) != 0)
 	return -1;
+
+    atexit(siplog_logfile_async_atexit);
 
     return 0;
 }
