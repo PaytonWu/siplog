@@ -2,8 +2,8 @@
 
 #define _FILE_OFFSET_BITS  64
 
-#include <pthread.h>
 #include <sys/file.h>
+#include <pthread.h>
 #include <errno.h>
 #include <sched.h>
 #include <stdarg.h>
@@ -18,17 +18,20 @@
 #define SIPLOG_WI_POOL_SIZE     64
 #define SIPLOG_WI_DATA_LEN      2048
 
-#define SIPLOG_ITEM_ASYNC_OPEN          1
-#define SIPLOG_ITEM_ASYNC_WRITE         2
-#define SIPLOG_ITEM_ASYNC_CLOSE         3
-#define SIPLOG_ITEM_ASYNC_OWRC          4       /* OPEN, WRITE, CLOSE */
+typedef enum {
+    SIPLOG_ITEM_ASYNC_OPEN,
+    SIPLOG_ITEM_ASYNC_WRITE,
+    SIPLOG_ITEM_ASYNC_CLOSE,
+    SIPLOG_ITEM_ASYNC_OWRC, /* OPEN, WRITE, CLOSE */
+    SIPLOG_ITEM_ASYNC_EXIT
+} item_types;
 
 #define SIPLOG_WI_NOWAIT	0
 #define	SIPLOG_WI_WAIT		1
 
 struct siplog_wi
 {
-    int item_type;
+    item_types item_type;
     struct loginfo *loginfo;
     char data[SIPLOG_WI_DATA_LEN];
     const char *name;
@@ -39,10 +42,10 @@ struct siplog_wi
 static pthread_mutex_t siplog_init_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int siplog_queue_inited = 0;
 static pthread_t siplog_queue;
-static pthread_cond_t siplog_queue_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t siplog_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t siplog_wi_free_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t siplog_wi_free_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t siplog_queue_cond;
+static pthread_mutex_t siplog_queue_mutex;
+static pthread_cond_t siplog_wi_free_cond;
+static pthread_mutex_t siplog_wi_free_mutex;
 
 static int siplog_dropped_items;
 
@@ -93,19 +96,23 @@ static void
 siplog_logfile_async_atexit(void)
 {
     struct siplog_wi *wi;
-    int c;
 
-    for (;;) {
-        pthread_mutex_lock(&siplog_wi_free_mutex);
-        for (c = 0, wi = siplog_wi_free; wi != NULL; wi = wi->next) {
-            c += 1;
-        }
-        if (c == SIPLOG_WI_POOL_SIZE)
-            break;
-        pthread_mutex_unlock(&siplog_wi_free_mutex);
-        sched_yield();
-    }
-    pthread_mutex_unlock(&siplog_wi_free_mutex);
+    if (siplog_queue_inited == 0)
+	return;
+
+    /* Wait for the worker thread to exit */
+    wi = siplog_queue_get_free_item(SIPLOG_WI_WAIT);
+    wi->item_type = SIPLOG_ITEM_ASYNC_EXIT;
+    siplog_queue_put_item(wi);
+    pthread_join(siplog_queue, NULL);
+}
+
+static void
+siplog_logfile_async_atfork(void)
+{
+
+    siplog_logfile_async_atexit();
+    siplog_queue_inited = 0;
 }
 
 static void
@@ -211,17 +218,24 @@ siplog_queue_run(void)
 	    case SIPLOG_ITEM_ASYNC_OPEN:
 		siplog_queue_handle_open(wi);
 		break;
+
 	    case SIPLOG_ITEM_ASYNC_WRITE:
 		siplog_queue_handle_write(wi);
 		break;
+
 	    case SIPLOG_ITEM_ASYNC_CLOSE:
 		siplog_queue_handle_close((FILE *)wi->loginfo->private);
 		/* free loginfo structure */
 		siplog_free(wi->loginfo);
 		break;
+
 	    case SIPLOG_ITEM_ASYNC_OWRC:
 		siplog_queue_handle_owrc(wi);
 		break;
+
+            case SIPLOG_ITEM_ASYNC_EXIT:
+                return;
+
 	    default:
 		break;
 	}
@@ -264,10 +278,13 @@ siplog_queue_init(void)
 
     siplog_dropped_items = 0;
 
+    pthread_cond_init(&siplog_queue_cond, NULL);
+    pthread_mutex_init(&siplog_queue_mutex, NULL);
+    pthread_cond_init(&siplog_wi_free_cond, NULL);
+    pthread_mutex_init(&siplog_wi_free_mutex, NULL);
+
     if (pthread_create(&siplog_queue, NULL, (void *(*)(void *))&siplog_queue_run, NULL) != 0)
 	return -1;
-
-    atexit(siplog_logfile_async_atexit);
 
     return 0;
 }
@@ -278,11 +295,17 @@ siplog_logfile_async_open(struct loginfo *lp)
     struct siplog_wi *wi;
 
     pthread_mutex_lock(&siplog_init_mutex);
-    if (siplog_queue_inited == 0)
-	if (siplog_queue_init() != 0)
+    if (siplog_queue_inited == 0) {
+	if (siplog_queue_init() != 0) {
+	    pthread_mutex_unlock(&siplog_init_mutex);
 	    return -1;
+	}
+    }
     siplog_queue_inited = 1;
     pthread_mutex_unlock(&siplog_init_mutex);
+
+    atexit(siplog_logfile_async_atexit);
+    pthread_atfork(siplog_logfile_async_atfork, NULL, NULL);
 
     if ((lp->flags & LF_REOPEN) == 0) {
 	wi = siplog_queue_get_free_item(SIPLOG_WI_NOWAIT);
