@@ -341,26 +341,41 @@ siplog_logfile_async_write(struct loginfo *lp, const char *tstamp, const char *e
 	s1 = sizeof(wi->data);
 
 	s2 = snprintf(p, s1, "%s/%s/%s: ", tstamp, lp->call_id, lp->app);
-	if (s2 >= s1)	/* message was truncated */
+	if (s2 >= s1) {
+	    /* message was truncated */
+	    p[s1 - 2] = '\n';
 	    break;
+	}
 	p += s2;
 	s1 -= s2;
 
 	s2 = vsnprintf(p, s1, fmt, ap);
-	if (s2 >= s1)	/* message was truncated */
+	if (s2 >= s1) {
+	    /* message was truncated */
+	    p[s1 - 2] = '\n';
 	    break;
+	}
 	p += s2;
 	s1 -= s2;
 
 	if (estr != NULL) {
-	    s2 = snprintf(p, s1, fmt, ap);
-	    if (s2 >= s1)	/* message was truncated */
+	    s2 = snprintf(p, s1, ": %s", estr);
+	    if (s2 >= s1) {
+		/* message was truncated */
+		p[s1 - 2] = '\n';
 		break;
+	    }
 	    p += s2;
 	    s1 -= s2;
 	}
 
-	snprintf(p, s1, "\n");
+	if (s1 == 1) {
+	    /* message was truncated */
+	    p -= 1;
+	}
+
+	p[0] = '\n';
+	p[1] = '\0';
 
     } while (0);
 
