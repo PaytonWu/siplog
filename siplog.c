@@ -257,12 +257,14 @@ void
 siplog_close(siplog_t handle)
 {
     struct loginfo *lp;
+    int free_after_close;
 
     lp = (struct loginfo *)handle;
     if (lp == NULL)
         return;
+    free_after_close = lp->bend->free_after_close;
     lp->bend->close(lp);
-    if (lp->bend->free_after_close) {
+    if (free_after_close) {
 	siplog_free(lp);
     }
 }
