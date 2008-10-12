@@ -3,6 +3,7 @@
 #ifndef _SIPLOG_INTERNAL_H_
 #define _SIPLOG_INTERNAL_H_
 
+#include <sys/time.h>
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -37,7 +38,7 @@ void siplog_logfile_async_write(struct loginfo *, const char *, const char *,
   const char *, va_list);
 void siplog_logfile_async_close(struct loginfo *);
 
-char *siplog_timeToStr(time_t, char *);
+char *siplog_timeToStr(struct timeval *, char *);
 void siplog_free(struct loginfo *);
 
 #endif /* _SIPLOG_INTERNAL_H_ */

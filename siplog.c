@@ -3,6 +3,7 @@
 #define _FILE_OFFSET_BITS  64
 
 #include <sys/file.h>
+#include <sys/time.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -44,7 +45,7 @@ static struct bend bends[] = {
 };
 
 char *
-siplog_timeToStr(time_t uTime, char *buf)
+siplog_timeToStr(struct timeval *tvp, char *buf)
 {
     static const char *wdays[7] = {"Sun", "Mon", "Tue", "Wed", "Thu",
       "Fri", "Sat"};
@@ -53,7 +54,7 @@ siplog_timeToStr(time_t uTime, char *buf)
     const char *wday, *mon;
     struct tm mytm;
 
-    localtime_r(&uTime, &mytm);
+    localtime_r((time_t *)&(tvp->tv_sec), &mytm);
     assert(mytm.tm_wday < 7);
     assert(mytm.tm_mon < 12);
     mon = mons[mytm.tm_mon];
@@ -63,8 +64,8 @@ siplog_timeToStr(time_t uTime, char *buf)
       mytm.tm_min, mytm.tm_sec, mytm.tm_zone, wday, mon, mytm.tm_mday,
       mytm.tm_year + 1900);
 #else
-    sprintf(buf, "%d %s %.2d:%.2d:%.2d", mytm.tm_mday,
-      mon, mytm.tm_hour, mytm.tm_min, mytm.tm_sec);
+    sprintf(buf, "%d %s %.2d:%.2d:%.2d.%.3d", mytm.tm_mday,
+      mon, mytm.tm_hour, mytm.tm_min, mytm.tm_sec, (int)(tvp->tv_usec / 1000));
 #endif
     return (buf);
 }
@@ -214,14 +215,14 @@ siplog_write(int level, siplog_t handle, const char *fmt, ...)
 {
     struct loginfo *lp;
     char tstamp[64];
-    time_t t;
+    struct timeval tv;
     va_list ap;
 
     lp = (struct loginfo *)handle;
     if (lp == NULL || lp->bend == NULL || level < lp->level)
         return;
-    t = time(&t);
-    siplog_timeToStr(t, tstamp);
+    gettimeofday(&tv, NULL);
+    siplog_timeToStr(&tv, tstamp);
     va_start(ap, fmt);
     lp->bend->write(lp, tstamp, NULL, fmt, ap);
     va_end(ap);
@@ -233,7 +234,7 @@ siplog_ewrite(int level, siplog_t handle, const char *fmt, ...)
     struct loginfo *lp;
     char tstamp[64];
     char ebuf[256];
-    time_t t;
+    struct timeval tv;
     va_list ap;
     int errno_bak;
 
@@ -245,8 +246,8 @@ siplog_ewrite(int level, siplog_t handle, const char *fmt, ...)
 	errno = errno_bak;
 	return;
     }
-    t = time(&t);
-    siplog_timeToStr(t, tstamp);
+    gettimeofday(&tv, NULL);
+    siplog_timeToStr(&tv, tstamp);
     va_start(ap, fmt);
     lp->bend->write(lp, tstamp, ebuf, fmt, ap);
     va_end(ap);
