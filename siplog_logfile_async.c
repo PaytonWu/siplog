@@ -41,6 +41,8 @@ struct siplog_wi
 
 static pthread_mutex_t siplog_init_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int siplog_queue_inited = 0;
+static int atexit_registered = 0;
+static int atfork_registered = 0;
 static pthread_t siplog_queue;
 static pthread_cond_t siplog_queue_cond;
 static pthread_mutex_t siplog_queue_mutex;
@@ -105,6 +107,7 @@ siplog_logfile_async_atexit(void)
     wi->item_type = SIPLOG_ITEM_ASYNC_EXIT;
     siplog_queue_put_item(wi);
     pthread_join(siplog_queue, NULL);
+    siplog_queue_inited = 0;
 }
 
 static void
@@ -112,7 +115,7 @@ siplog_logfile_async_atfork(void)
 {
 
     siplog_logfile_async_atexit();
-    siplog_queue_inited = 0;
+    atfork_registered = 0;
 }
 
 static void
@@ -302,10 +305,16 @@ siplog_logfile_async_open(struct loginfo *lp)
 	}
     }
     siplog_queue_inited = 1;
-    pthread_mutex_unlock(&siplog_init_mutex);
 
-    atexit(siplog_logfile_async_atexit);
-    pthread_atfork(siplog_logfile_async_atfork, NULL, NULL);
+    if (atexit_registered == 0) {
+	atexit(siplog_logfile_async_atexit);
+	atexit_registered = 1;
+    }
+    if (atfork_registered == 0) {
+	pthread_atfork(siplog_logfile_async_atfork, NULL, NULL);
+	atfork_registered = 1;
+    }
+    pthread_mutex_unlock(&siplog_init_mutex);
 
     if ((lp->flags & LF_REOPEN) == 0) {
 	wi = siplog_queue_get_free_item(SIPLOG_WI_NOWAIT);
