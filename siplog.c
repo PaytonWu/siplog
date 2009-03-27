@@ -5,6 +5,7 @@
 #include <sys/file.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -121,6 +122,7 @@ siplog_logfile_write(struct loginfo *lp, const char *tstamp, const char *estr, c
 		     va_list ap)
 {
     FILE *f;
+    off_t offset;
 
     if ((lp->flags & LF_REOPEN) == 0) {
 	f = (FILE *)lp->private;
@@ -135,14 +137,14 @@ siplog_logfile_write(struct loginfo *lp, const char *tstamp, const char *estr, c
 	if (f == NULL)
 	    return;
     }
-    flock(fileno(f), LOCK_EX);
+    offset = siplog_lockf(fileno(f));
     fprintf(f, "%s/%s/%s: ", tstamp, lp->call_id, lp->app);
     vfprintf(f, fmt, ap);
     if (estr != NULL)
 	fprintf(f, ": %s", estr);
     fprintf(f, "\n");
     fflush(f);
-    flock(fileno(f), LOCK_UN);
+    siplog_unlockf(fileno(f), offset);
     if ((lp->flags & LF_REOPEN) != 0)
 	fclose(f);
 }
@@ -277,4 +279,40 @@ siplog_free(struct loginfo *lp)
     free(lp->call_id);
     free(lp->app);
     free(lp);
+}
+
+off_t
+siplog_lockf(int fd)
+{
+    struct flock l;
+    int rval;
+
+    memset(&l, '\0', sizeof(l));
+    l.l_whence = SEEK_CUR;
+    l.l_type = F_WRLCK;
+    do {
+        rval = fcntl(fd, F_SETLKW, &l);
+    } while (rval == -1 && errno == EINTR);
+#if defined(PEDANTIC)
+    assert(rval != -1);
+#endif
+    return lseek(fd, 0, SEEK_CUR);
+}
+
+void
+siplog_unlockf(int fd, off_t offset)
+{
+    struct flock l;
+    int rval;
+
+    memset(&l, '\0', sizeof(l));
+    l.l_whence = SEEK_SET;
+    l.l_start = offset;
+    l.l_type = F_UNLCK;
+    do {
+        rval = fcntl(fd, F_SETLKW, &l);
+    } while (rval == -1 && errno == EINTR);
+#if defined(PEDANTIC)
+    assert(rval != -1);
+#endif
 }

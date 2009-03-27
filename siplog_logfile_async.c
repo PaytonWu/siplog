@@ -129,13 +129,14 @@ static void
 siplog_queue_handle_write(struct siplog_wi *wi)
 {
     FILE *f;
+    off_t offset;
 
     f = (FILE *)wi->loginfo->private;
     if (f != NULL) {
-	flock(fileno(f), LOCK_EX);
+	offset = siplog_lockf(fileno(f));
 	fwrite(wi->data, wi->len, 1, f);
 	fflush(f);
-	flock(fileno(f), LOCK_UN);
+	siplog_unlockf(fileno(f), offset);
     }
 }
 

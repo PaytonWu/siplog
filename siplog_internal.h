@@ -40,5 +40,7 @@ void siplog_logfile_async_close(struct loginfo *);
 
 char *siplog_timeToStr(struct timeval *, char *);
 void siplog_free(struct loginfo *);
+off_t siplog_lockf(int);
+void siplog_unlockf(int, off_t);
 
 #endif /* _SIPLOG_INTERNAL_H_ */
