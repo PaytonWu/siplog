@@ -213,6 +213,24 @@ siplog_open(const char *app, const char *call_id, int flags)
     return lp;
 }
 
+int
+siplog_set_level(siplog_t handle, int level)
+{
+    struct loginfo *lp;
+    int oldlevel;
+
+    lp = (struct loginfo *)handle;
+    if (lp == NULL || lp->bend == NULL)
+        return -1;
+
+    if (level < 0)
+        return lp->level;
+    oldlevel = lp->level;
+    lp->level = level;
+
+    return oldlevel;
+} 
+
 void
 siplog_write(int level, siplog_t handle, const char *fmt, ...)
 {
