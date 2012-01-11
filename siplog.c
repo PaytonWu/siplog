@@ -4,6 +4,8 @@
 
 #include <sys/file.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -32,11 +34,11 @@ static struct
 
 static int    siplog_stderr_open(struct loginfo *);
 static void   siplog_stderr_write(struct loginfo *, const char *, const char *,
-				  const char *, va_list);
+				  const char *, const char *, va_list);
 static void   siplog_stderr_close(struct loginfo *);
 static int    siplog_logfile_open(struct loginfo *);
 static void   siplog_logfile_write(struct loginfo *, const char *, const char *,
-		    		   const char *, va_list);
+		    		   const char *, const char *, va_list);
 static void   siplog_logfile_close(struct loginfo *);
 
 static struct bend bends[] = {
@@ -81,8 +83,8 @@ siplog_stderr_open(struct loginfo *lp)
 }
 
 static void
-siplog_stderr_write(struct loginfo *lp, const char *tstamp, const char *estr, const char *fmt,
-		    va_list ap)
+siplog_stderr_write(struct loginfo *lp, const char *tstamp,
+  const char *estr, const char *unused, const char *fmt, va_list ap)
 {
     FILE *f;
 
@@ -99,6 +101,25 @@ siplog_stderr_close(struct loginfo *lp __attribute__ ((unused)))
 {
 
     /* Nothing to do here */
+}
+
+void
+siplog_update_index(const char *idx_id, FILE *logfile, off_t offset)
+{
+    struct stat st;
+    int res;
+    char fname[1024];
+    FILE *idxfile;
+
+    res = fstat(fileno(logfile), &st);
+    if (res == -1)
+        return;
+    sprintf(fname, "/var/log/siplog.idx/%llu", (long long unsigned)st.st_ino);
+    idxfile = fopen(fname, "a");
+    if (idxfile == NULL)
+        return;
+    fprintf(idxfile, "%s %llu\n", idx_id, (long long unsigned)offset);
+    fclose(idxfile);
 }
 
 static int
@@ -119,8 +140,8 @@ siplog_logfile_open(struct loginfo *lp)
 }
 
 static void
-siplog_logfile_write(struct loginfo *lp, const char *tstamp, const char *estr, const char *fmt,
-		     va_list ap)
+siplog_logfile_write(struct loginfo *lp, const char *tstamp,
+  const char *estr, const char *idx_id, const char *fmt, va_list ap)
 {
     FILE *f;
     off_t offset;
@@ -139,6 +160,7 @@ siplog_logfile_write(struct loginfo *lp, const char *tstamp, const char *estr, c
 	    return;
     }
     offset = siplog_lockf(fileno(f));
+    siplog_update_index(idx_id, f, offset);
     fprintf(f, "%s/%s/%s: ", tstamp, lp->call_id, lp->app);
     vfprintf(f, fmt, ap);
     if (estr != NULL)
@@ -176,7 +198,13 @@ siplog_open(const char *app, const char *call_id, int flags)
         return NULL;
     }
 
-    lp->call_id = (call_id != NULL) ? strdup(call_id) : strdup("GLOBAL");
+    if (call_id != NULL) {
+        lp->call_id = strdup(call_id);
+        lp->call_id_global = 0;
+    } else {
+        lp->call_id = strdup("GLOBAL");
+        lp->call_id_global = 1;
+    }
     if (lp->call_id == NULL) {
 	free(lp->app);
 	free(lp);
@@ -238,6 +266,7 @@ siplog_write(int level, siplog_t handle, const char *fmt, ...)
     char tstamp[64];
     struct timeval tv;
     va_list ap;
+    const char *idx_id;
 
     lp = (struct loginfo *)handle;
     if (lp == NULL || lp->bend == NULL || level < lp->level)
@@ -245,7 +274,26 @@ siplog_write(int level, siplog_t handle, const char *fmt, ...)
     gettimeofday(&tv, NULL);
     siplog_timeToStr(&tv, tstamp);
     va_start(ap, fmt);
-    lp->bend->write(lp, tstamp, NULL, fmt, ap);
+    idx_id = (lp->call_id_global != 0) ? NULL : lp->call_id;
+    lp->bend->write(lp, tstamp, NULL, idx_id, fmt, ap);
+    va_end(ap);
+}
+
+void
+siplog_iwrite(int level, siplog_t handle, const char *idx_id, const char *fmt, ...)
+{
+    struct loginfo *lp;
+    char tstamp[64];
+    struct timeval tv;
+    va_list ap;
+
+    lp = (struct loginfo *)handle;
+    if (lp == NULL || lp->bend == NULL || level < lp->level)
+        return;
+    gettimeofday(&tv, NULL);
+    siplog_timeToStr(&tv, tstamp);
+    va_start(ap, fmt);
+    lp->bend->write(lp, tstamp, NULL, idx_id, fmt, ap);
     va_end(ap);
 }
 
@@ -258,6 +306,7 @@ siplog_ewrite(int level, siplog_t handle, const char *fmt, ...)
     struct timeval tv;
     va_list ap;
     int errno_bak;
+    const char *idx_id;
 
     lp = (struct loginfo *)handle;
     if (lp == NULL || level < lp->level)
@@ -270,7 +319,8 @@ siplog_ewrite(int level, siplog_t handle, const char *fmt, ...)
     gettimeofday(&tv, NULL);
     siplog_timeToStr(&tv, tstamp);
     va_start(ap, fmt);
-    lp->bend->write(lp, tstamp, ebuf, fmt, ap);
+    idx_id = (lp->call_id_global != 0) ? NULL : lp->call_id;
+    lp->bend->write(lp, tstamp, ebuf, idx_id, fmt, ap);
     va_end(ap);
     errno = errno_bak;
 }

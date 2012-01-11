@@ -17,6 +17,7 @@
 
 #define SIPLOG_WI_POOL_SIZE     64
 #define SIPLOG_WI_DATA_LEN      2048
+#define SIPLOG_WI_ID_LEN        128
 
 typedef enum {
     SIPLOG_ITEM_ASYNC_OPEN,
@@ -37,6 +38,7 @@ struct siplog_wi
     const char *name;
     int len;
     struct siplog_wi *next;
+    char idx_id[SIPLOG_WI_ID_LEN];
 };
 
 static pthread_mutex_t siplog_init_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -134,6 +136,9 @@ siplog_queue_handle_write(struct siplog_wi *wi)
     f = (FILE *)wi->loginfo->private;
     if (f != NULL) {
 	offset = siplog_lockf(fileno(f));
+	if (wi->idx_id[0] != '\0') {
+	    siplog_update_index(wi->idx_id, f, offset);
+	}
 	fwrite(wi->data, wi->len, 1, f);
 	fflush(f);
 	siplog_unlockf(fileno(f), offset);
@@ -336,7 +341,7 @@ siplog_logfile_async_open(struct loginfo *lp)
 
 void
 siplog_logfile_async_write(struct loginfo *lp, const char *tstamp, const char *estr,
-  const char *fmt, va_list ap)
+  const char *idx_id, const char *fmt, va_list ap)
 {
     struct siplog_wi *wi;
     char *p;
@@ -389,6 +394,11 @@ siplog_logfile_async_write(struct loginfo *lp, const char *tstamp, const char *e
 
     } while (0);
 
+    if (idx_id != NULL) {
+        strlcpy(wi->idx_id, idx_id, sizeof(wi->idx_id));
+    } else {
+        wi->idx_id[0] = '\0';
+    }
 
     if ((lp->flags & LF_REOPEN) != 0) {
 	wi->item_type = SIPLOG_ITEM_ASYNC_OWRC;

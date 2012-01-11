@@ -24,6 +24,7 @@ int	 siplog_set_level(siplog_t handle, int level);
 #define	 siplog_get_level(handle) siplog_set_level((handle), -1)
 void	 siplog_write(int level, siplog_t handle, const char *format, ...);
 void	 siplog_ewrite(int level, siplog_t handle, const char *format, ...);
+void	 siplog_iwrite(int level, siplog_t handle, const char *, const char *format, ...);
 void	 siplog_close(siplog_t handle);
 
 #ifdef __cplusplus
