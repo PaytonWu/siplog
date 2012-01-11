@@ -84,7 +84,8 @@ siplog_stderr_open(struct loginfo *lp)
 
 static void
 siplog_stderr_write(struct loginfo *lp, const char *tstamp,
-  const char *estr, const char *unused, const char *fmt, va_list ap)
+  const char *estr, const char *unused __attribute__ ((unused)),
+  const char *fmt, va_list ap)
 {
     FILE *f;
 
