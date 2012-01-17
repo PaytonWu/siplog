@@ -108,19 +108,27 @@ void
 siplog_update_index(const char *idx_id, FILE *logfile, off_t offset)
 {
     struct stat st;
-    int res;
-    char fname[1024];
-    FILE *idxfile;
+    int res, idxfile;
+    char *fname, *outbuf;
 
     res = fstat(fileno(logfile), &st);
     if (res == -1)
         return;
-    sprintf(fname, "/var/log/siplog.idx/%llu", (long long unsigned)st.st_ino);
-    idxfile = fopen(fname, "a");
-    if (idxfile == NULL)
+    asprintf(&fname, "/var/log/siplog.idx/%llu", (long long unsigned)st.st_ino);
+    if (fname == NULL)
         return;
-    fprintf(idxfile, "%s %llu\n", idx_id, (long long unsigned)offset);
-    fclose(idxfile);
+    idxfile = open(fname, O_CREAT | O_APPEND | O_WRONLY, 0644);
+    free(fname);
+    if (idxfile < 0)
+        return;
+    res = asprintf(&outbuf, "%s %llu\n", idx_id, (long long unsigned)offset);
+    if (outbuf == NULL) {
+        close(idxfile);
+        return;
+    }
+    write(idxfile, outbuf, res);
+    close(idxfile);
+    free(outbuf);
 }
 
 static int
