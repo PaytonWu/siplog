@@ -105,13 +105,13 @@ siplog_stderr_close(struct loginfo *lp __attribute__ ((unused)))
 }
 
 void
-siplog_update_index(const char *idx_id, FILE *logfile, off_t offset)
+siplog_update_index(const char *idx_id, int fd, off_t offset)
 {
     struct stat st;
     int res, idxfile;
     char *fname, *outbuf;
 
-    res = fstat(fileno(logfile), &st);
+    res = fstat(fd, &st);
     if (res == -1)
         return;
     asprintf(&fname, "/var/log/siplog.idx/%llu", (long long unsigned)st.st_ino);
@@ -169,7 +169,7 @@ siplog_logfile_write(struct loginfo *lp, const char *tstamp,
 	    return;
     }
     offset = siplog_lockf(fileno(f));
-    siplog_update_index(idx_id, f, offset);
+    siplog_update_index(idx_id, fileno(f), offset);
     fprintf(f, "%s/%s/%s: ", tstamp, lp->call_id, lp->app);
     vfprintf(f, fmt, ap);
     if (estr != NULL)

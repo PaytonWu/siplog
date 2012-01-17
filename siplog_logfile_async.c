@@ -30,6 +30,10 @@ typedef enum {
 #define SIPLOG_WI_NOWAIT	0
 #define	SIPLOG_WI_WAIT		1
 
+struct siplog_private {
+    int fd;
+};
+
 struct siplog_wi
 {
     item_types item_type;
@@ -63,7 +67,7 @@ struct siplog_wi *siplog_queue_get_free_item(int);
 static void siplog_queue_put_item(struct siplog_wi *);
 static void siplog_queue_handle_open(struct siplog_wi *);
 static void siplog_queue_handle_write(struct siplog_wi *);
-static void siplog_queue_handle_close(FILE *f);
+static void siplog_queue_handle_close(struct siplog_wi *);
 static void siplog_queue_handle_owrc(struct siplog_wi *);
 
 #if 0
@@ -123,34 +127,40 @@ siplog_logfile_async_atfork(void)
 static void
 siplog_queue_handle_open(struct siplog_wi *wi)
 {
+    struct siplog_private *private;
 
-    wi->loginfo->private = (void *)fopen(wi->name, "a");
+    private = (struct siplog_private *)wi->loginfo->private;
+
+    private->fd = open(wi->name, O_CREAT | O_APPEND | O_WRONLY, 0640);
 }
 
 static void
 siplog_queue_handle_write(struct siplog_wi *wi)
 {
-    FILE *f;
     off_t offset;
+    struct siplog_private *private;
 
-    f = (FILE *)wi->loginfo->private;
-    if (f != NULL) {
-	offset = siplog_lockf(fileno(f));
+    private = (struct siplog_private *)wi->loginfo->private;
+    if (private->fd >= 0) {
+	offset = siplog_lockf(private->fd);
 	if (wi->idx_id[0] != '\0') {
-	    siplog_update_index(wi->idx_id, f, offset);
+	    siplog_update_index(wi->idx_id, private->fd, offset);
 	}
-	fwrite(wi->data, wi->len, 1, f);
-	fflush(f);
-	siplog_unlockf(fileno(f), offset);
+	write(private->fd, wi->data, wi->len);
+	siplog_unlockf(private->fd, offset);
     }
 }
 
 static void
-siplog_queue_handle_close(FILE *f)
+siplog_queue_handle_close(struct siplog_wi *wi)
 {
+    struct siplog_private *private;
 
-    if (f != NULL)
-	fclose(f);
+    private = (struct siplog_private *)wi->loginfo->private;
+    if (private->fd >= 0) {
+        close(private->fd);
+        private->fd = -1;
+    }
 }
 
 static void
@@ -159,7 +169,7 @@ siplog_queue_handle_owrc(struct siplog_wi *wi)
 
     siplog_queue_handle_open(wi);
     siplog_queue_handle_write(wi);
-    siplog_queue_handle_close((FILE *)wi->loginfo->private);
+    siplog_queue_handle_close(wi);
 }
 
 struct siplog_wi *
@@ -233,8 +243,9 @@ siplog_queue_run(void)
 		break;
 
 	    case SIPLOG_ITEM_ASYNC_CLOSE:
-		siplog_queue_handle_close((FILE *)wi->loginfo->private);
+		siplog_queue_handle_close(wi);
 		/* free loginfo structure */
+                free(wi->loginfo->private);
 		siplog_free(wi->loginfo);
 		break;
 
@@ -302,6 +313,7 @@ int
 siplog_logfile_async_open(struct loginfo *lp)
 {
     struct siplog_wi *wi;
+    struct siplog_private *private;
 
     pthread_mutex_lock(&siplog_init_mutex);
     if (siplog_queue_inited == 0) {
@@ -322,10 +334,21 @@ siplog_logfile_async_open(struct loginfo *lp)
     }
     pthread_mutex_unlock(&siplog_init_mutex);
 
+    private = malloc(sizeof(*private));
+    if (private == NULL)
+        return -1;
+
+    memset(&private, 0, sizeof(*private));
+    private->fd = -1;
+
+    lp->private = (void *)private;
+
     if ((lp->flags & LF_REOPEN) == 0) {
 	wi = siplog_queue_get_free_item(SIPLOG_WI_NOWAIT);
-	if (wi == NULL) 
+	if (wi == NULL) {
+            free(lp->private);
 	    return -1;
+        }
 
 	wi->item_type = SIPLOG_ITEM_ASYNC_OPEN;
 	wi->loginfo = lp;
