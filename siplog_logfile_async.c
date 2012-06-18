@@ -338,7 +338,7 @@ siplog_logfile_async_open(struct loginfo *lp)
     if (private == NULL)
         return -1;
 
-    memset(&private, 0, sizeof(*private));
+    memset(private, 0, sizeof(*private));
     private->fd = -1;
 
     lp->private = (void *)private;
