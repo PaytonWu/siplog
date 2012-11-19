@@ -241,6 +241,7 @@ siplog_open(const char *app, const char *call_id, int flags)
 
     /* Detect uninitialized access */
     lp->private = (void *)0x1;
+    lp->pid = getpid();
 
     if (lp->bend->open(lp) != 0) {
         siplog_free(lp);

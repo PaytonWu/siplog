@@ -4,8 +4,10 @@
 #define _SIPLOG_INTERNAL_H_
 
 #include <sys/time.h>
+#include <sys/types.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #define SIPLOG_DEFAULT_PATH	"/var/log/sip.log"
 
@@ -18,6 +20,7 @@ struct loginfo
     struct bend *bend;
     int         flags;
     int         call_id_global;
+    pid_t       pid;
 };
 
 typedef int    (*siplog_bend_open_t)(struct loginfo *);

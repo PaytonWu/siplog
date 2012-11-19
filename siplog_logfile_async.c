@@ -378,7 +378,7 @@ siplog_logfile_async_write(struct loginfo *lp, const char *tstamp, const char *e
 	p = wi->data;
 	s1 = sizeof(wi->data);
 
-	s2 = snprintf(p, s1, "%s/%s/%s: ", tstamp, lp->call_id, lp->app);
+	s2 = snprintf(p, s1, "%s/%s/%s[%d]: ", tstamp, lp->call_id, lp->app, lp->pid);
 	if (s2 >= s1) {
 	    /* message was truncated */
 	    p[s1 - 2] = '\n';
