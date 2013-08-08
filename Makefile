@@ -1,5 +1,8 @@
 # $Id$
 
+PKGNAME=	${LIB}
+PKGFILES=	GNUmakefile Makefile ${SRCS} test.c
+
 LIB=		siplog
 LIBTHREAD?=	pthread
 
@@ -16,5 +19,12 @@ CLEANFILES+=	test
 
 test: lib${LIB}.a
 	${CC} -I. test.c -o test -l${LIBTHREAD} -L. -l${LIB}
+
+TSTAMP!=        date "+%Y%m%d%H%M%S"
+
+distribution: clean
+	tar cvfy /tmp/${PKGNAME}-sippy-${TSTAMP}.tbz2 ${PKGFILES}
+	git tag rel.${TSTAMP}
+	git push origin rel.${TSTAMP}
 
 .include <bsd.lib.mk>
