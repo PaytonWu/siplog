@@ -3,6 +3,8 @@
 #define _FILE_OFFSET_BITS  64
 
 #include <sys/file.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <pthread.h>
 #include <errno.h>
 #include <sched.h>
@@ -32,6 +34,8 @@ typedef enum {
 
 struct siplog_private {
     int fd;
+    ino_t ino;
+    char *fpath;
 };
 
 struct siplog_wi
@@ -128,10 +132,20 @@ static void
 siplog_queue_handle_open(struct siplog_wi *wi)
 {
     struct siplog_private *private;
+    struct stat sb;
 
     private = (struct siplog_private *)wi->loginfo->private;
 
     private->fd = open(wi->name, O_CREAT | O_APPEND | O_WRONLY, 0640);
+    if (fstat(private->fd, &sb) == 0) {
+        private->ino = sb.st_ino;
+    } else {
+        private->ino = 0;
+    }
+    if (private->fpath != NULL) {
+        free(private->fpath);
+    }
+    private->fpath = strdup(wi->name);
 }
 
 static void
@@ -166,10 +180,22 @@ siplog_queue_handle_close(struct siplog_wi *wi)
 static void
 siplog_queue_handle_owrc(struct siplog_wi *wi)
 {
+    struct siplog_private *private;
+    struct stat sb;
+    int skipoc;
 
-    siplog_queue_handle_open(wi);
+    private = (struct siplog_private *)wi->loginfo->private;
+    skipoc = 0;
+    if (private->fpath != NULL && private->ino > 0) {
+        if (stat(private->fpath, &sb) == 0 && sb.st_ino == private->ino)
+            skipoc = 1;
+    }
+   
+    if (skipoc == 0)
+        siplog_queue_handle_open(wi);
     siplog_queue_handle_write(wi);
-    siplog_queue_handle_close(wi);
+    if (skipoc == 0)
+        siplog_queue_handle_close(wi);
 }
 
 struct siplog_wi *
