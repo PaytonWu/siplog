@@ -186,16 +186,16 @@ siplog_queue_handle_owrc(struct siplog_wi *wi)
 
     private = (struct siplog_private *)wi->loginfo->private;
     skipoc = 0;
-    if (private->fpath != NULL && private->ino > 0) {
+    if (private->fd != -1 && private->fpath != NULL && private->ino > 0) {
         if (stat(private->fpath, &sb) == 0 && sb.st_ino == private->ino)
             skipoc = 1;
     }
-   
-    if (skipoc == 0)
+    if (skipoc == 0) {
+        if (private->fd != -1)
+            siplog_queue_handle_close(wi);
         siplog_queue_handle_open(wi);
+    }
     siplog_queue_handle_write(wi);
-    if (skipoc == 0)
-        siplog_queue_handle_close(wi);
 }
 
 struct siplog_wi *
