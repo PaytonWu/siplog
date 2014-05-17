@@ -8,7 +8,7 @@ LIBTHREAD?=	pthread
 
 SRCS=		siplog.c siplog.h siplog_internal.h siplog_logfile_async.c
 
-LDADD=		-l{LIBTHREAD}
+LDADD=		-l${LIBTHREAD}
 
 NO_SHARED?=	YES
 NO_PROFILE?=	YES
