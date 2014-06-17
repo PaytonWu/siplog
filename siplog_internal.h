@@ -46,6 +46,6 @@ char *siplog_timeToStr(struct timeval *, char *);
 void siplog_free(struct loginfo *);
 off_t siplog_lockf(int);
 void siplog_unlockf(int, off_t);
-void siplog_update_index(const char *, int, off_t);
+void siplog_update_index(const char *, int, off_t, size_t);
 
 #endif /* _SIPLOG_INTERNAL_H_ */

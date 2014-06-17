@@ -105,7 +105,7 @@ siplog_stderr_close(struct loginfo *lp __attribute__ ((unused)))
 }
 
 void
-siplog_update_index(const char *idx_id, int fd, off_t offset)
+siplog_update_index(const char *idx_id, int fd, off_t offset, size_t nbytes)
 {
     struct stat st;
     int res, idxfile;
@@ -121,7 +121,8 @@ siplog_update_index(const char *idx_id, int fd, off_t offset)
     free(fname);
     if (idxfile < 0)
         return;
-    res = asprintf(&outbuf, "%s %llu\n", idx_id, (long long unsigned)offset);
+    res = asprintf(&outbuf, "%s %llu %llu\n", idx_id,
+      (long long unsigned)offset, (long long unsigned)nbytes);
     if (outbuf == NULL) {
         close(idxfile);
         return;
@@ -154,6 +155,7 @@ siplog_logfile_write(struct loginfo *lp, const char *tstamp,
 {
     FILE *f;
     off_t offset;
+    size_t nbytes;
 
     if ((lp->flags & LF_REOPEN) == 0) {
 	f = (FILE *)lp->private;
@@ -169,14 +171,14 @@ siplog_logfile_write(struct loginfo *lp, const char *tstamp,
 	    return;
     }
     offset = siplog_lockf(fileno(f));
-    siplog_update_index(idx_id, fileno(f), offset);
-    fprintf(f, "%s/%s/%s: ", tstamp, lp->call_id, lp->app);
-    vfprintf(f, fmt, ap);
+    nbytes = fprintf(f, "%s/%s/%s: ", tstamp, lp->call_id, lp->app);
+    nbytes += vfprintf(f, fmt, ap);
     if (estr != NULL)
-	fprintf(f, ": %s", estr);
-    fprintf(f, "\n");
+	nbytes += fprintf(f, ": %s", estr);
+    nbytes += fprintf(f, "\n");
     fflush(f);
     siplog_unlockf(fileno(f), offset);
+    siplog_update_index(idx_id, fileno(f), offset, nbytes);
     if ((lp->flags & LF_REOPEN) != 0)
 	fclose(f);
 }

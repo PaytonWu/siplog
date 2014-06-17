@@ -158,7 +158,7 @@ siplog_queue_handle_write(struct siplog_wi *wi)
     if (private->fd >= 0) {
 	offset = siplog_lockf(private->fd);
 	if (wi->idx_id[0] != '\0') {
-	    siplog_update_index(wi->idx_id, private->fd, offset);
+	    siplog_update_index(wi->idx_id, private->fd, offset, wi->len);
 	}
 	write(private->fd, wi->data, wi->len);
 	siplog_unlockf(private->fd, offset);
