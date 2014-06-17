@@ -28,4 +28,9 @@ distribution: clean
 	git tag rel.${TSTAMP}
 	git push origin rel.${TSTAMP}
 
+includepolice:
+	for file in ${SRCS}; do \
+	  python misc/includepolice.py $${file} || sleep 5; \
+	done
+
 .include <bsd.lib.mk>
