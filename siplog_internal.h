@@ -3,12 +3,6 @@
 #ifndef _SIPLOG_INTERNAL_H_
 #define _SIPLOG_INTERNAL_H_
 
-#include <sys/time.h>
-#include <sys/types.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <unistd.h>
-
 #define SIPLOG_DEFAULT_PATH	"/var/log/sip.log"
 
 struct loginfo
