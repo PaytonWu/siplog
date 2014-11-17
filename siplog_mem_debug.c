@@ -35,6 +35,7 @@
 
 #include <sys/types.h>
 #include <pthread.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,6 +48,7 @@
 #undef free
 #undef realloc
 #undef strdup
+#undef asprintf
 
 #define UNUSED(x) (void)(x)
 
@@ -218,6 +220,32 @@ siplog_memdeb_strdup(const char *ptr, const char *fname, int linen, const char *
     memcpy(rval, &mnp, sizeof(struct memdeb_node *));
     rval += sizeof(struct memdeb_node *);
     memcpy(rval, ptr, size);
+    return (rval);
+}
+
+int
+siplog_memdeb_asprintf(char **pp, const char *fmt, const char *fname,
+  int linen, const char *funcn, ...)
+{
+    int rval;
+    void *tp;
+    va_list ap;
+
+    va_start(ap, funcn);
+    rval = vasprintf(pp, fmt, ap);
+    va_end(ap);
+    if (rval <= 0) {
+        return (rval);
+    }
+    tp = siplog_memdeb_malloc(rval + 1, fname, linen, funcn);
+    if (tp == NULL) {
+        free(*pp);
+        *pp = NULL;
+        return (-1);
+    }
+    memcpy(tp, *pp, rval + 1);
+    free(*pp);
+    *pp = tp;
     return (rval);
 }
 
