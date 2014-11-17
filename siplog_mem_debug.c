@@ -299,7 +299,7 @@ siplog_memdeb_dumpstats(int level, siplog_t handle)
         }
         if (errors_found == 0) {
             siplog_write(level, handle,
-              "MEMDEB suspicious allocations:");
+              "MEMDEB:siplog: suspicious allocations:");
         }
         errors_found++;
         siplog_write(level, handle,
@@ -310,10 +310,10 @@ siplog_memdeb_dumpstats(int level, siplog_t handle)
     pthread_mutex_unlock(memdeb_mutex);
     if (errors_found == 0) {
         siplog_write(level, handle,
-          "MEMDEB: all clear");
+          "MEMDEB:siplog: all clear");
     } else {
         siplog_write(level, handle,
-          "MEMDEB: errors found: %d", errors_found);
+          "MEMDEB:siplog: errors found: %d", errors_found);
     }
     return (errors_found);
 }
