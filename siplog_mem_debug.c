@@ -49,6 +49,7 @@
 #undef realloc
 #undef strdup
 #undef asprintf
+#undef vasprintf
 
 #define UNUSED(x) (void)(x)
 
@@ -227,13 +228,23 @@ int
 siplog_memdeb_asprintf(char **pp, const char *fmt, const char *fname,
   int linen, const char *funcn, ...)
 {
-    int rval;
-    void *tp;
     va_list ap;
+    int rval;
 
     va_start(ap, funcn);
-    rval = vasprintf(pp, fmt, ap);
+    rval = siplog_memdeb_vasprintf(pp, fmt, fname, linen, funcn, ap);
     va_end(ap);
+    return (rval);
+}
+
+int
+siplog_memdeb_vasprintf(char **pp, const char *fmt, const char *fname,
+  int linen, const char *funcn, va_list ap)
+{
+    int rval;
+    void *tp;
+
+    rval = vasprintf(pp, fmt, ap);
     if (rval <= 0) {
         return (rval);
     }

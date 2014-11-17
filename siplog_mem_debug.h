@@ -34,12 +34,14 @@
 #define realloc(p,n) siplog_memdeb_realloc((p), (n), __FILE__, __LINE__, __func__)
 #define strdup(p) siplog_memdeb_strdup((p), __FILE__, __LINE__, __func__)
 #define asprintf(pp, fmt, args...) siplog_memdeb_asprintf((pp), (fmt), __FILE__, __LINE__, __func__, ## args)
+#define vasprintf(pp, fmt, vl) siplog_memdeb_vasprintf((pp), (fmt), __FILE__, __LINE__, __func__, (vl))
 
 void *siplog_memdeb_malloc(size_t, const char *, int, const char *);
 void siplog_memdeb_free(void *, const char *, int, const char *);
 void *siplog_memdeb_realloc(void *, size_t,  const char *, int, const char *);
 char *siplog_memdeb_strdup(const char *, const char *, int, const char *);
 int siplog_memdeb_asprintf(char **, const char *, const char *, int, const char *, ...);
+int siplog_memdeb_vasprintf(char **, const char *, const char *, int, const char *, va_list);
 
 #ifndef _SIPLOG_T_DEFINED
 typedef void * siplog_t;
