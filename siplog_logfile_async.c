@@ -172,6 +172,10 @@ siplog_queue_handle_close(struct siplog_wi *wi)
         close(private->fd);
         private->fd = -1;
     }
+    if (private->fpath != NULL) {
+        free(private->fpath);
+        private->fpath = NULL;
+    }
 }
 
 static void
