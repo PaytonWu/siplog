@@ -6,7 +6,7 @@ PKGFILES=	GNUmakefile Makefile ${SRCS} ${DEBUG_SRCS} test.c
 LIB=		siplog
 LIBTHREAD?=	pthread
 .if defined(SIPLOG_DEBUG)
-CFLAGS+=	-DSIPLOG_DEBUG -include siplog_mem_debug.h
+CFLAGS+=	-DSIPLOG_DEBUG -include siplog_mem_debug.h -g3 -O0
 SRCS+=		${DEBUG_SRCS}
 .endif
 DEBUG_SRCS=	siplog_mem_debug.c siplog_mem_debug.h
