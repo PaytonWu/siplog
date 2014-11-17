@@ -3,7 +3,10 @@
 #ifndef _SIPLOG_H_
 #define _SIPLOG_H_
 
+#ifndef _SIPLOG_T_DEFINED
 typedef void * siplog_t;
+#define _SIPLOG_T_DEFINED
+#endif
 
 #define SIPLOG_DBUG	0
 #define SIPLOG_INFO	1
@@ -26,6 +29,9 @@ void	 siplog_write(int level, siplog_t handle, const char *format, ...);
 void	 siplog_ewrite(int level, siplog_t handle, const char *format, ...);
 void	 siplog_iwrite(int level, siplog_t handle, const char *, const char *format, ...);
 void	 siplog_close(siplog_t handle);
+
+int      siplog_memdeb_dumpstats(int level, siplog_t handle);
+void     siplog_memdeb_setbaseln(void);
 
 #ifdef __cplusplus
 }

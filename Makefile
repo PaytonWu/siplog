@@ -1,12 +1,17 @@
 # $Id$
 
 PKGNAME=	${LIB}
-PKGFILES=	GNUmakefile Makefile ${SRCS} test.c
+PKGFILES=	GNUmakefile Makefile ${SRCS} ${DEBUG_SRCS} test.c
 
 LIB=		siplog
 LIBTHREAD?=	pthread
+.if defined(SIPLOG_DEBUG)
+CFLAGS+=	-DSIPLOG_DEBUG -include siplog_mem_debug.h
+SRCS+=		${DEBUG_SRCS}
+.endif
+DEBUG_SRCS=	siplog_mem_debug.c siplog_mem_debug.h
 
-SRCS=		siplog.c siplog.h siplog_internal.h siplog_logfile_async.c
+SRCS+=		siplog.c siplog.h siplog_internal.h siplog_logfile_async.c
 
 LDADD=		-l${LIBTHREAD}
 
@@ -17,8 +22,8 @@ WARNS?=		4
 
 CLEANFILES+=	test
 
-test: lib${LIB}.a
-	${CC} -I. test.c -o test -l${LIBTHREAD} -L. -l${LIB}
+test: lib${LIB}.a test.c
+	${CC} ${CFLAGS} -I. test.c -o test -l${LIBTHREAD} -L. -l${LIB}
 
 TSTAMP!=        date "+%Y%m%d%H%M%S"
 

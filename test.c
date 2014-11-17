@@ -4,6 +4,7 @@
 #include <siplog.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 int main()
 {
@@ -11,11 +12,12 @@ int main()
     int i;
     struct timespec interval;
 
-    log = siplog_open("test", "1234@1.2.3.4", 0);
     globallog = siplog_open("test", NULL, LF_REOPEN);
-    if (log == NULL)
-        err(1, "can't open logs");
+    siplog_memdeb_setbaseln();
     siplog_write(SIPLOG_DBUG, globallog, "staring process...");
+    log = siplog_open("test", "1234@1.2.3.4", 0);
+    if (log == NULL || globallog == NULL)
+        err(1, "can't open logs");
     siplog_write(SIPLOG_DBUG, log, "level DBUG, %d", 1);
     siplog_write(SIPLOG_WARN, log, "level WARN, %d", 2);
     siplog_write(SIPLOG_ERR, log, "level ERR, %d", 3);
@@ -27,8 +29,9 @@ int main()
 	nanosleep(&interval, NULL);
     }
     siplog_write(SIPLOG_DBUG, globallog, "stoping process...");
-    siplog_close(globallog);
     siplog_close(log);
+    siplog_memdeb_dumpstats(SIPLOG_DBUG, globallog);
+    siplog_close(globallog);
 
     /* allow worker thread to finish its job in async mode */
     sleep(1);
