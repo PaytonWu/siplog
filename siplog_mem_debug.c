@@ -88,7 +88,7 @@ static pthread_mutex_t *memdeb_mutex;
 static struct memdeb_node *
 siplog_memdeb_nget(const char *fname, int linen, const char *funcn, int doalloc)
 {
-    static struct memdeb_node *rval, *mnp, *lastnode;
+    struct memdeb_node *rval, *mnp, *lastnode;
 
     if (memdeb_mutex == NULL) {
         memdeb_mutex = malloc(sizeof(pthread_mutex_t));
@@ -276,7 +276,7 @@ is_approved(const char *funcn)
 int
 siplog_memdeb_dumpstats(int level, siplog_t handle)
 {
-    static struct memdeb_node *mnp;
+    struct memdeb_node *mnp;
     int errors_found, max_nunalloc;
     int64_t nunalloc;
 
@@ -322,7 +322,7 @@ void
 siplog_memdeb_setbaseln(void)
 {
 
-    static struct memdeb_node *mnp;
+    struct memdeb_node *mnp;
 
     pthread_mutex_lock(memdeb_mutex);
     for (mnp = nodes; mnp != NULL; mnp = mnp->next) {
