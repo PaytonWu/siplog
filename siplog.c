@@ -270,12 +270,11 @@ siplog_set_level(siplog_t handle, int level)
 } 
 
 void
-siplog_write(int level, siplog_t handle, const char *fmt, ...)
+siplog_write_va(int level, siplog_t handle, const char *fmt, va_list ap)
 {
     struct loginfo *lp;
     char tstamp[64];
     struct timeval tv;
-    va_list ap;
     const char *idx_id;
 
     lp = (struct loginfo *)handle;
@@ -283,9 +282,17 @@ siplog_write(int level, siplog_t handle, const char *fmt, ...)
         return;
     gettimeofday(&tv, NULL);
     siplog_timeToStr(&tv, tstamp);
-    va_start(ap, fmt);
     idx_id = (lp->call_id_global != 0) ? NULL : lp->call_id;
     lp->bend->write(lp, tstamp, NULL, idx_id, fmt, ap);
+}
+
+void
+siplog_write(int level, siplog_t handle, const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    siplog_write_va(level, handle, fmt, ap);
     va_end(ap);
 }
 
@@ -308,13 +315,12 @@ siplog_iwrite(int level, siplog_t handle, const char *idx_id, const char *fmt, .
 }
 
 void
-siplog_ewrite(int level, siplog_t handle, const char *fmt, ...)
+siplog_ewrite_va(int level, siplog_t handle, const char *fmt, va_list ap)
 {
     struct loginfo *lp;
     char tstamp[64];
     char ebuf[256];
     struct timeval tv;
-    va_list ap;
     int errno_bak;
     const char *idx_id;
 
@@ -328,11 +334,19 @@ siplog_ewrite(int level, siplog_t handle, const char *fmt, ...)
     }
     gettimeofday(&tv, NULL);
     siplog_timeToStr(&tv, tstamp);
-    va_start(ap, fmt);
     idx_id = (lp->call_id_global != 0) ? NULL : lp->call_id;
     lp->bend->write(lp, tstamp, ebuf, idx_id, fmt, ap);
-    va_end(ap);
     errno = errno_bak;
+}
+
+void
+siplog_ewrite(int level, siplog_t handle, const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    siplog_ewrite_va(level, handle, fmt, ap);
+    va_end(ap);
 }
 
 void

@@ -26,7 +26,9 @@ siplog_t siplog_open(const char *app, const char *call_id, int flags);
 int	 siplog_set_level(siplog_t handle, int level);
 #define	 siplog_get_level(handle) siplog_set_level((handle), -1)
 void	 siplog_write(int level, siplog_t handle, const char *format, ...);
+void	 siplog_write_va(int level, siplog_t handle, const char *format, va_list);
 void	 siplog_ewrite(int level, siplog_t handle, const char *format, ...);
+void	 siplog_ewrite_va(int level, siplog_t handle, const char *format, va_list);
 void	 siplog_iwrite(int level, siplog_t handle, const char *, const char *format, ...);
 void	 siplog_close(siplog_t handle);
 
