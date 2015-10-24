@@ -18,6 +18,8 @@ typedef void * siplog_t;
 
 #define LF_REOPEN	1
 
+#include <stdarg.h>	/* Needed for the va_list */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
