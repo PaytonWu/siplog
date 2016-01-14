@@ -469,12 +469,10 @@ siplog_logfile_async_close(struct loginfo *lp)
 {
     struct siplog_wi *wi;
 
-    if ((lp->flags & LF_REOPEN) == 0) {
-	wi = siplog_queue_get_free_item(SIPLOG_WI_WAIT);
-	wi->item_type = SIPLOG_ITEM_ASYNC_CLOSE;
-	wi->loginfo = lp;
-	wi->len = 0;
+    wi = siplog_queue_get_free_item(SIPLOG_WI_WAIT);
+    wi->item_type = SIPLOG_ITEM_ASYNC_CLOSE;
+    wi->loginfo = lp;
+    wi->len = 0;
 
-	siplog_queue_put_item(wi);
-    }
+    siplog_queue_put_item(wi);
 }
