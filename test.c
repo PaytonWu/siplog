@@ -1,4 +1,9 @@
-/* $Id$ */
+/*
+ * Copyright (c) 2004-2006 Maxim Sobolev <sobomax@FreeBSD.org>
+ * Copyright (c) 2006-2016 Sippy Software, Inc., http://www.sippysoft.com
+ * All rights reserved.
+ *
+ */
 
 #include <err.h>
 #include <siplog.h>
