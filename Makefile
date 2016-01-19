@@ -11,7 +11,8 @@ SRCS+=		${DEBUG_SRCS}
 .endif
 DEBUG_SRCS=	siplog_mem_debug.c siplog_mem_debug.h
 
-SRCS+=		siplog.c siplog.h siplog_internal.h siplog_logfile_async.c
+SRCS+=		siplog.c siplog.h internal/_siplog.h siplog_logfile_async.c \
+		internal/siplog_logfile_async.h
 
 LDADD=		-l${LIBTHREAD}
 

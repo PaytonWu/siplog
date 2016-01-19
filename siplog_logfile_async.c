@@ -17,7 +17,8 @@
 #include <unistd.h>
 
 #include "siplog.h"
-#include "siplog_internal.h"
+#include "internal/_siplog.h"
+#include "internal/siplog_logfile_async.h"
 
 #define SIPLOG_WI_POOL_SIZE     64
 #define SIPLOG_WI_DATA_LEN      2048
@@ -28,6 +29,7 @@ typedef enum {
     SIPLOG_ITEM_ASYNC_WRITE,
     SIPLOG_ITEM_ASYNC_CLOSE,
     SIPLOG_ITEM_ASYNC_OWRC, /* OPEN, WRITE, CLOSE */
+    SIPLOG_ITEM_ASYNC_HBEAT,
     SIPLOG_ITEM_ASYNC_EXIT
 } item_types;
 
@@ -204,6 +206,25 @@ siplog_queue_handle_owrc(struct siplog_wi *wi)
     siplog_queue_handle_write(wi);
 }
 
+static void
+siplog_queue_handle_hbeat(struct siplog_wi *wi)
+{
+    struct siplog_private *private;
+    struct stat sb;
+    int skipoc;
+
+    private = (struct siplog_private *)wi->loginfo->private;
+    skipoc = 0;
+    if (private->fd != -1 && private->fpath != NULL && private->ino > 0) {
+        if (stat(private->fpath, &sb) != 0 || sb.st_ino == private->ino)
+            return;
+    } else {
+        return;
+    }
+    siplog_queue_handle_close(wi);
+    siplog_queue_handle_open(wi);
+}
+
 struct siplog_wi *
 siplog_queue_get_free_item(int wait)
 {
@@ -287,6 +308,10 @@ siplog_queue_run(void)
 
             case SIPLOG_ITEM_ASYNC_EXIT:
                 return;
+
+            case SIPLOG_ITEM_ASYNC_HBEAT:
+                siplog_queue_handle_hbeat(wi);
+                break;
 
 	    default:
 		break;
@@ -476,6 +501,19 @@ siplog_logfile_async_close(struct loginfo *lp)
 
     wi = siplog_queue_get_free_item(SIPLOG_WI_WAIT);
     wi->item_type = SIPLOG_ITEM_ASYNC_CLOSE;
+    wi->loginfo = lp;
+    wi->len = 0;
+
+    siplog_queue_put_item(wi);
+}
+
+void
+siplog_logfile_async_hbeat(struct loginfo *lp)
+{
+    struct siplog_wi *wi;
+
+    wi = siplog_queue_get_free_item(SIPLOG_WI_WAIT);
+    wi->item_type = SIPLOG_ITEM_ASYNC_HBEAT;
     wi->loginfo = lp;
     wi->len = 0;
 

@@ -18,7 +18,8 @@
 #include <unistd.h>
 
 #include "siplog.h"
-#include "siplog_internal.h"
+#include "internal/_siplog.h"
+#include "internal/siplog_logfile_async.h"
 
 #define assert(x) {if (!(x)) abort();}
 
@@ -51,7 +52,7 @@ static struct bend bends[] = {
       .close = siplog_logfile_close, .free_after_close = 1, .name = "logfile"},
     {.open = siplog_logfile_async_open, .write = siplog_logfile_async_write,
       .close = siplog_logfile_async_close, .free_after_close = 0,
-      .name = "logfile_async"},
+      .name = "logfile_async", .hbeat = siplog_logfile_async_hbeat},
     {.open = NULL, .write = NULL, .close = NULL, .name = NULL}
 };
 

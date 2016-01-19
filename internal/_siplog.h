@@ -38,11 +38,6 @@ struct bend
     const char          *name;
 };
 
-int siplog_logfile_async_open(struct loginfo *);
-void siplog_logfile_async_write(struct loginfo *, const char *, const char *,
-  const char *, const char *, va_list);
-void siplog_logfile_async_close(struct loginfo *);
-
 char *siplog_timeToStr(struct timeval *, char *);
 void siplog_free(struct loginfo *);
 off_t siplog_lockf(int);
