@@ -1,4 +1,9 @@
-/* $Id$ */
+/*
+ * Copyright (c) 2004-2006 Maxim Sobolev <sobomax@FreeBSD.org>
+ * Copyright (c) 2006-2016 Sippy Software, Inc., http://www.sippysoft.com
+ * All rights reserved.
+ *
+ */
 
 #ifndef _SIPLOG_H_
 #define _SIPLOG_H_
@@ -33,6 +38,7 @@ void	 siplog_ewrite(int level, siplog_t handle, const char *format, ...);
 void	 siplog_ewrite_va(int level, siplog_t handle, const char *format, va_list);
 void	 siplog_iwrite(int level, siplog_t handle, const char *, const char *format, ...);
 void	 siplog_close(siplog_t handle);
+void	 siplog_hbeat(siplog_t handle);
 
 int      siplog_memdeb_dumpstats(int level, siplog_t handle);
 void     siplog_memdeb_setbaseln(void);

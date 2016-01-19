@@ -1,4 +1,9 @@
-/* $Id$ */
+/*
+ * Copyright (c) 2004-2006 Maxim Sobolev <sobomax@FreeBSD.org>
+ * Copyright (c) 2006-2016 Sippy Software, Inc., http://www.sippysoft.com
+ * All rights reserved.
+ *
+ */
 
 #define _FILE_OFFSET_BITS  64
 
@@ -40,10 +45,14 @@ static void   siplog_logfile_write(struct loginfo *, const char *, const char *,
 static void   siplog_logfile_close(struct loginfo *);
 
 static struct bend bends[] = {
-    {siplog_stderr_open, siplog_stderr_write, siplog_stderr_close, 1, "stderr"},
-    {siplog_logfile_open, siplog_logfile_write, siplog_logfile_close, 1, "logfile"},
-    {siplog_logfile_async_open, siplog_logfile_async_write, siplog_logfile_async_close, 0, "logfile_async"},
-    {NULL, NULL, NULL, 0, NULL}
+    {.open = siplog_stderr_open, .write = siplog_stderr_write,
+      .close = siplog_stderr_close, .free_after_close = 1, .name = "stderr"},
+    {.open = siplog_logfile_open, .write = siplog_logfile_write,
+      .close = siplog_logfile_close, .free_after_close = 1, .name = "logfile"},
+    {.open = siplog_logfile_async_open, .write = siplog_logfile_async_write,
+      .close = siplog_logfile_async_close, .free_after_close = 0,
+      .name = "logfile_async"},
+    {.open = NULL, .write = NULL, .close = NULL, .name = NULL}
 };
 
 char *

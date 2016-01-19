@@ -1,4 +1,9 @@
-/* $Id$ */
+/*
+ * Copyright (c) 2004-2006 Maxim Sobolev <sobomax@FreeBSD.org>
+ * Copyright (c) 2006-2016 Sippy Software, Inc., http://www.sippysoft.com
+ * All rights reserved.
+ *
+ */
 
 #ifndef _SIPLOG_INTERNAL_H_
 #define _SIPLOG_INTERNAL_H_
@@ -21,12 +26,14 @@ typedef int    (*siplog_bend_open_t)(struct loginfo *);
 typedef void   (*siplog_bend_write_t)(struct loginfo *, const char *, const char *,
 				      const char *, const char *, va_list);
 typedef void   (*siplog_bend_close_t)(struct loginfo *);
+typedef void   (*siplog_bend_hbeat_t)(struct loginfo *);
 
 struct bend
 {
     siplog_bend_open_t  open;
     siplog_bend_write_t write;
     siplog_bend_close_t close;
+    siplog_bend_hbeat_t hbeat;
     int			free_after_close;
     const char          *name;
 };
