@@ -375,6 +375,17 @@ siplog_close(siplog_t handle)
 }
 
 void
+siplog_hbeat(siplog_t handle)
+{
+    struct loginfo *lp;
+
+    lp = (struct loginfo *)handle;
+    if (lp == NULL || lp->bend->hbeat == NULL)
+        return;
+    lp->bend->hbeat(lp);
+}
+
+void
 siplog_free(struct loginfo *lp)
 {
 
