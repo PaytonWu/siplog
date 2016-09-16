@@ -21,7 +21,7 @@
 #include "internal/siplog_logfile_async.h"
 
 #define SIPLOG_WI_POOL_SIZE     64
-#define SIPLOG_WI_DATA_LEN      2048
+#define SIPLOG_WI_DATA_LEN      (8 * 1024)
 #define SIPLOG_WI_ID_LEN        128
 
 typedef enum {
