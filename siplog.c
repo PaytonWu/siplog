@@ -98,7 +98,7 @@ siplog_stderr_write(struct loginfo *lp, const char *tstamp,
     FILE *f;
 
     f = (FILE *)lp->private;
-    fprintf(f, "%s/%s/%s: ", tstamp, lp->call_id, lp->app);
+    fprintf(f, "%s/%s/%s[%d]: ", tstamp, lp->call_id, lp->app, lp->pid);
     vfprintf(f, fmt, ap);
     if (estr != NULL)
 	fprintf(f, ": %s", estr);
@@ -179,7 +179,8 @@ siplog_logfile_write(struct loginfo *lp, const char *tstamp,
 	    return;
     }
     offset = siplog_lockf(fileno(f));
-    nbytes = fprintf(f, "%s/%s/%s: ", tstamp, lp->call_id, lp->app);
+    nbytes = fprintf(f, "%s/%s/%s[%d]: ", tstamp, lp->call_id, lp->app,
+      lp->pid);
     nbytes += vfprintf(f, fmt, ap);
     if (estr != NULL)
 	nbytes += fprintf(f, ": %s", estr);
