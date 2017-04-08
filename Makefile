@@ -15,8 +15,8 @@ SRCS+=		siplog.c siplog.h internal/_siplog.h siplog_logfile_async.c \
 		internal/siplog_logfile_async.h
 
 LDADD=		-l${LIBTHREAD}
+SHLIB_MAJOR=	1
 
-NO_SHARED?=	YES
 NO_PROFILE?=	YES
 
 WARNS?=		4
