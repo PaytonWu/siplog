@@ -17,7 +17,7 @@ SRCS+=		siplog.c siplog.h internal/_siplog.h siplog_logfile_async.c \
 LDADD=		-l${LIBTHREAD}
 SHLIB_MAJOR=	1
 
-MK_PROFILE=	no
+NO_PROFILE=	yes
 
 WARNS?=		4
 
