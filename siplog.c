@@ -59,19 +59,21 @@ static struct bend bends[] = {
 char *
 siplog_timeToStr(struct timeval *tvp, char *buf)
 {
+#ifdef SIPLOG_DETAILED_DATES
     static const char *wdays[7] = {"Sun", "Mon", "Tue", "Wed", "Thu",
       "Fri", "Sat"};
+#endif
     static const char *mons[12] = {"Jan", "Feb", "Mar", "Apr", "May",
       "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-    const char *wday, *mon;
+    const char *mon;
     struct tm mytm;
 
     localtime_r((time_t *)&(tvp->tv_sec), &mytm);
     assert(mytm.tm_wday < 7);
     assert(mytm.tm_mon < 12);
     mon = mons[mytm.tm_mon];
-    wday = wdays[mytm.tm_wday];
 #ifdef SIPLOG_DETAILED_DATES
+    const char *wday = wdays[mytm.tm_wday];
     sprintf(buf, "%.2d:%.2d:%.2d %s %s %s %.2d %d", mytm.tm_hour,
       mytm.tm_min, mytm.tm_sec, mytm.tm_zone, wday, mon, mytm.tm_mday,
       mytm.tm_year + 1900);

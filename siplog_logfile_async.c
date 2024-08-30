@@ -211,10 +211,8 @@ siplog_queue_handle_hbeat(struct siplog_wi *wi)
 {
     struct siplog_private *private;
     struct stat sb;
-    int skipoc;
 
     private = (struct siplog_private *)wi->loginfo->private;
-    skipoc = 0;
     if (private->fd != -1 && private->fpath != NULL && private->ino > 0) {
         if (stat(private->fpath, &sb) != 0 || sb.st_ino == private->ino)
             return;
